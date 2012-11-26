@@ -56,14 +56,14 @@ class Bulk_Add_Pages {
 				<?php wp_nonce_field( plugin_basename( __FILE__ ), 'bap_nonce' ); ?>
 				<table class="form-table">
 					<tr>
-						<th class="row"><strong><label for="bap_titles">Titles</label></strong></th>
+						<th class="row"><strong><label for="bap_titles"><?php _e('Titles'); ?></label></strong></th>
 						<td>
 							<p class="description"><?php _e('One title per line. Empty lines will be ignored.'); ?></p>
 							<textarea name="bap_titles" rows="10" cols="50" id="bap_titles" class="large-text" style="resize:vertical"></textarea>
 						</td>
 					</tr>
 					<tr>
-						<th class="row"><strong><label for="bap_parent_id">Parent</label></strong></th>
+						<th class="row"><strong><label for="bap_parent_id"><?php _e('Parent'); ?></label></strong></th>
 						<td>
 							<?php
 							wp_dropdown_pages( array(
@@ -77,7 +77,7 @@ class Bulk_Add_Pages {
 						</td>
 					</tr>
 					<tr>
-						<th class="row"><strong><label for="bap_status">Status</label></strong></th>
+						<th class="row"><strong><label for="bap_status"><?php _e('Status'); ?></label></strong></th>
 						<td>
 							<select name="bap_status" id="bap_status">
 								<option value="publish"><?php _e('Published'); ?></option>
@@ -101,7 +101,7 @@ class Bulk_Add_Pages {
 			return;
 
 		// Check if user is allowed
-		if ( ! current_user_can( 'import' ) )
+		if ( ! current_user_can('publish_pages') )
 			return;
 
 		// Let's do this thing!
