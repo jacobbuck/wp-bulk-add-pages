@@ -3,7 +3,7 @@
 Plugin Name: Bulk Add Pages
 Plugin URI: https://github.com/jacobbuck/wp-bulk-add-pages
 Description: Quickly add multiple pages at once.
-Version: 1.0
+Version: 1.1
 Author: Jacob Buck
 Author URI: http://jacobbuck.co.nz/
 */
@@ -40,13 +40,13 @@ class Bulk_Add_Pages {
 				echo '<div class="updated settings-error" id="setting-error-settings_updated"><p><strong>';
 				switch ( $result ) {
 					case 0:
-						echo __('No pages created');
+						echo __('No pages created.');
 						break;
 					case 1:
-						echo __('1 page created');
+						echo __('1 page created.');
 						break;
 					default:
-						echo str_replace( '%' , number_format_i18n( $result ),  __('% pages created') );
+						echo str_replace( '%' , number_format_i18n( $result ),  __('% pages created.') );
 						break;
 				}
 				echo '</strong></p></div>';
@@ -63,12 +63,26 @@ class Bulk_Add_Pages {
 						</td>
 					</tr>
 					<tr>
-						<th class="row"><strong><label for="bap_parent_id"><?php _e('Parent'); ?></label></strong></th>
+						<th class="row"><strong><label for="bap_author"><?php _e('Author'); ?></label></strong></th>
+						<td>
+							<?php
+							global $user_ID;
+							wp_dropdown_users( array(
+								'who' => 'authors',
+								'name' => 'bap_author',
+								'selected' => $user_ID,
+								'include_selected' => true
+							) );
+							?>
+						</td>
+					</tr>
+					<tr>
+						<th class="row"><strong><label for="bap_parent"><?php _e('Parent'); ?></label></strong></th>
 						<td>
 							<?php
 							wp_dropdown_pages( array(
 								'post_type'        => 'page',
-								'name'             => 'bap_parent_id',
+								'name'             => 'bap_parent',
 								'show_option_none' => __('(no parent)'),
 								'sort_column'      => 'menu_order, post_title',
 								'post_status'      => array( 'publish', 'pending', 'draft', 'private', 'future' )
@@ -87,6 +101,16 @@ class Bulk_Add_Pages {
 							</select>
 						</td>
 					</tr>
+					<tr>
+						<th class="row"><strong><label for="bap_template"><?php _e('Template'); ?></label></strong></th>
+						<td>
+							<select name="bap_template" id="bap_template">
+								<option value="default"><?php _e('Default Template'); ?></option>
+								<?php page_template_dropdown(); ?>
+							</select>
+						</td>
+					</tr>
+
 				</table>
 				<p class="submit"><input type="submit" name="bap_submit" id="bap_submit" class="button-primary" value="<?php _e('Add New Pages'); ?>"></p>
 			</form>
@@ -96,6 +120,8 @@ class Bulk_Add_Pages {
 
 	function save_pages () {
 
+		global $user_ID;
+
 		// Nonce Validation
 		if ( empty( $_POST['bap_nonce'] ) || ! wp_verify_nonce( $_POST['bap_nonce'], plugin_basename( __FILE__ ) ) )
 			return;
@@ -104,19 +130,18 @@ class Bulk_Add_Pages {
 		if ( ! current_user_can('publish_pages') )
 			return;
 
-		// Let's do this thing!
-		if ( ! empty( $_POST['bap_titles'] ) ) {
+		$posts = array();
 
-			$success = 0;
+		if ( ! empty( $_POST['bap_titles'] ) ) {
 
 			// Get titles
 			$titles = explode( "\r\n", $_POST['bap_titles'] );
 
 			// Get options
-			$args = array(
-				'parent' => empty( $_POST['bap_parent_id'] ) ? 0         : $_POST['bap_parent_id'],
-				'status' => empty( $_POST['bap_status'] )    ? 'publish' : $_POST['bap_status']
-			);
+			$author   = empty( $_POST['bap_author'] )   ? $user_ID  : $_POST['bap_author'];
+			$parent   = empty( $_POST['bap_parent'] )   ? 0         : $_POST['bap_parent'];
+			$status   = empty( $_POST['bap_status'] )   ? 'publish' : $_POST['bap_status'];
+			$template = empty( $_POST['bap_template'] ) ? 'default' : $_POST['bap_template'];
 
 			// Insert each page
 			foreach ( (array) $titles as $key => $title ) {
@@ -124,22 +149,29 @@ class Bulk_Add_Pages {
 				if ( ! $title = trim( $title ) )
 					continue;
 
-				$post = array(
-					'post_parent' => $args['parent'],
-					'post_status' => $args['status'],
+				$post_data = array(
+					'post_author' => $author,
+					'post_parent' => $parent,
+					'post_status' => $status,
 					'post_title'  => $title,
 					'post_type'   => 'page'
 				);
 
-				$post = apply_filters( 'bap_insert_post', $post, $title, $args );
+				$post_id = wp_insert_post( apply_filters( 'bap_insert_post', $post_data ) );
 
-				if ( wp_insert_post( $post ) )
-					$success += 1;
+				if ( 0 !== $post_id ) {
+
+					array_push( $posts, $post_id );
+
+					if ( 'default' !== $template )
+						add_post_meta( $post_id, '_wp_page_template', $template );
+
+				}
 
 			}
 
 			// Redirect once done
-			wp_redirect( admin_url( '/edit.php?post_type=page&page=bulk-add-pages&bap_result=' . $success ) );
+			wp_redirect( admin_url( '/edit.php?post_type=page&page=bulk-add-pages&bap_result=' . count( $posts ) ), 302 );
 			exit;
 
 		}
