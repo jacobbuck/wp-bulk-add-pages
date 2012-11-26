@@ -37,22 +37,22 @@ class Bulk_Add_Pages {
 			<?php
 			if ( isset( $_GET['bap_result'] ) ) {
 				$result = intval( $_GET['bap_result'] );
-				echo '<div class="updated settings-error" id="setting-error-settings_updated"><p><strong>';
+				echo '<div class="updated" id="message"><p>';
 				switch ( $result ) {
 					case 0:
-						echo __('No pages created.');
+						_e('No pages created.');
 						break;
 					case 1:
-						echo __('1 page created.');
+						_e('1 page created.');
 						break;
 					default:
 						echo str_replace( '%' , number_format_i18n( $result ),  __('% pages created.') );
 						break;
 				}
-				echo '</strong></p></div>';
+				echo '</p></div>';
 			}
 			?>
-			<form action="<?php echo admin_url('/edit.php?post_type=page&page=bulk-add-pages'); ?>" method="post">
+			<form action="<?php echo admin_url('edit.php?post_type=page&page=bulk-add-pages'); ?>" method="post">
 				<?php wp_nonce_field( plugin_basename( __FILE__ ), 'bap_nonce' ); ?>
 				<table class="form-table">
 					<tr>
@@ -68,9 +68,9 @@ class Bulk_Add_Pages {
 							<?php
 							global $user_ID;
 							wp_dropdown_users( array(
-								'who' => 'authors',
-								'name' => 'bap_author',
-								'selected' => $user_ID,
+								'who'              => 'authors',
+								'name'             => 'bap_author',
+								'selected'         => $user_ID,
 								'include_selected' => true
 							) );
 							?>
